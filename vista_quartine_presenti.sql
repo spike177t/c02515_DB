@@ -1,0 +1,10 @@
+-- SELECT * FROM magazzino, cassetto;
+
+-- SELECT * FROM magazzino INNER JOIN cassetto ON magazzino.ID_MAGAZZINO=cassetto.magazzino_ID_MAGAZZINO;
+
+SELECT MAG.`ID_MAGAZZINO`,
+MAG.`NOME` AS MAG_NOME,
+MAG.`STATO` AS MAG_STATO,
+MAG.`PIENO` AS_MAG_PIENO, CASS.*, QRT.*  FROM magazzino AS MAG 
+INNER JOIN cassetto AS CASS  ON MAG.ID_MAGAZZINO=CASS.magazzino_ID_MAGAZZINO
+INNER JOIN quartina AS QRT ON ( CASS.ID_CASSETTO = QRT.cassetto_ID_CASSETTO AND CASS.magazzino_ID_MAGAZZINO = QRT.cassetto_magazzino_ID_MAGAZZINO) ;
