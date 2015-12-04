@@ -7,7 +7,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `CassettoPiuVicinoAndInsert`
 		(
 		TipoCarico INT, 
         LeggiDaQuadra INT,
-		OP VARCHAR(10), /* "" = solo ricerca del cassetto più vicino, "INS" = inserisce anche nuova quartina, "UPD" aggiorna i dati indentificativi della quartina */
+		OP VARCHAR(10), --  "" = solo ricerca del cassetto più vicino, "INS" = inserisce anche nuova quartina, "UPD" aggiorna i dati indentificativi della quartina 
 		pID_QUARTINA VARCHAR(45),
 		pTOTALE_PEZZI_QUARTINA TINYINT(4),
 		pNOME_COMMESSA VARCHAR(45),
@@ -78,6 +78,10 @@ BEGIN
 				IF (cass_riferimento IS NULL) THEN        
 					SELECT ID_CASSETTO from cassetti_occupati WHERE POSIZIONE = 0 AND magazzino_ID_MAGAZZINO = valMAGAZZINO Order By lastupdate_milli DESC LIMIT 1 into cass_riferimento;
 				END IF;     
+                -- se ancora NULL battezzo 1
+                IF (cass_riferimento IS NULL) THEN        
+					SET cass_riferimento = 1;
+				END IF; 
 				
 				IF valMAGAZZINO = 1 THEN
 					SET CASS_RIF_MAG1 = cass_riferimento;
@@ -157,10 +161,16 @@ BEGIN
 				SET magazzino = IF(DISTANZA_MAG1 < DISTANZA_MAG2, 1, 2);
 				SET cassetto  = IF(DISTANZA_MAG1 < DISTANZA_MAG2, ID_MAG1, ID_MAG2);
 			END IF;
-			
+            
+            -- se cassetto o magazzino sono NULL significa che magazzino pieno e non posso inserire allora forzo i valori a zero
+            IF (cassetto IS NULL OR magazzino IS NULL) THEN
+				SET magazzino = 0;
+                SET cassetto  = 0;
+            END IF;
+
 			-- sarebbe da ottimizzare in base al cassetto fuori o se non ci sono cassetti fuori in base al cassetto che è di fronte al cassetto fuori
 		   
-		   IF (OP = "INS") THEN
+		   IF (OP = "INS" AND cassetto > 0 AND magazzino > 0) THEN
 				INSERT INTO `gualini`.`quartina`
 					(`ID_QUARTINA`,
 					`TOTALE_PEZZI_QUARTINA`,
