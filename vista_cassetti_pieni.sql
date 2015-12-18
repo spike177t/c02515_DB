@@ -1,10 +1,12 @@
+-- cassetti pieni
 USE `gualini`;
 CREATE 
      OR REPLACE ALGORITHM = UNDEFINED 
     DEFINER = `root`@`localhost` 
     SQL SECURITY DEFINER
-VIEW `cassetti_occupati` AS
-    SELECT 
+VIEW `cassetti_pieni` AS
+
+SELECT 
         `cass`.`ID_MAGAZZINO` AS `ID_MAGAZZINO`,
         `cass`.`MAG_NOME` AS `MAG_NOME`,
         `cass`.`MAG_STATO` AS `MAG_STATO`,
@@ -23,4 +25,5 @@ VIEW `cassetti_occupati` AS
     FROM
         (`tutti_cassetti` `cass`
         JOIN `quartina` `qrt` ON (((`qrt`.`cassetto_ID_CASSETTO` = `cass`.`ID_CASSETTO`)
-            AND (`qrt`.`cassetto_magazzino_ID_MAGAZZINO` = `cass`.`ID_MAGAZZINO`))));
+            AND (`qrt`.`cassetto_magazzino_ID_MAGAZZINO` = `cass`.`ID_MAGAZZINO`))))
+ 	WHERE  `qrt`.`TOTALE_PEZZI_QUARTINA` = (SELECT COUNT(*) FROM `gualini`.`pezzo` WHERE `pezzo`.`quartina_ID_QUARTINA` = `qrt`.`ID_QUARTINA`)
