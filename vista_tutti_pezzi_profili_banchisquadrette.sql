@@ -49,8 +49,8 @@ VIEW `tutti_pezzi_profili_banchisquadrette` AS
         `profili`.`Colla` AS `Colla`,
         `profili`.`Apertura` AS `Apertura`,
         `profili`.`TIPO_PROFILO` AS `TIPO_PROFILO`,
-        `profili`.`TELAIO` AS `TELAIO`,
-        (SELECT 
+        `profili`.`TELAIO` AS `TELAIO`
+ /*      , (SELECT 
                 `banco`.`ID_BANCO`
             FROM
                 `r2_banchi_squadrette` `banco`
@@ -74,7 +74,14 @@ VIEW `tutti_pezzi_profili_banchisquadrette` AS
                 `r2_banchi_squadrette` `banco`
             WHERE
                 (CONVERT( `banco`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA2`)) AS `FILA_SQ2`
+*/
+			, banco1.`ID_BANCO` as `BANCO_SQ1`
+			, banco1.`NumeroFila` as `FILA_SQ1`
+			, banco2.`ID_BANCO` as `BANCO_SQ2`
+			, banco2.`NumeroFila` as `FILA_SQ2`
     FROM
         (`tutti_pezzi` `tutti`
         LEFT JOIN `r2_codiciprofili` `profili` ON (((`tutti`.`SERIE_PROFILO` = CONVERT( `profili`.`SerieProfilo` USING UTF8))
-            AND (`tutti`.`CODICE_PROFILO` = CONVERT( `profili`.`CodiceProfilo` USING UTF8)))));
+            AND (`tutti`.`CODICE_PROFILO` = CONVERT( `profili`.`CodiceProfilo` USING UTF8)))))
+		LEFT JOIN `r2_banchi_squadrette` `banco1` ON ( `banco1`.`CodiceSquadretta` = `tutti`.`COD_SQUADRETTA1`)
+        LEFT JOIN `r2_banchi_squadrette` `banco2` ON ( `banco2`.`CodiceSquadretta` = `tutti`.`COD_SQUADRETTA2`);
