@@ -71,7 +71,13 @@ BEGIN
     IF esiste = 0 THEN
 		BEGIN
 			ricerca: REPEAT
-
+				-- inizializzo
+				SET cass_riferimento = NULL; 
+                SET DISTANZA_CLW = NULL;
+				SET DISTANZA_CCW = NULL;
+				SET ID_CLW = NULL;
+				SET ID_CCW = NULL;
+                 
 				-- cerco il casetto che è nell'estrattore
 				SELECT ID_CASSETTO from gualini.cassetto WHERE POSIZIONE = cass_posizione AND magazzino_ID_MAGAZZINO = valMAGAZZINO into cass_riferimento;
 				-- se l'estrattore è vuoto come riferiemnto prendo l'ultimo cassetto non disponibile movimentato
@@ -138,28 +144,57 @@ BEGIN
 
 			IF TipoCarico = 0 THEN
 				IF LeggiDaQuadra = 1 THEN
-					SET magazzino = 1;
-					SET cassetto = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, ID_MAG1_CLW, ID_MAG1_CCW);
+					IF CASS_DISPONIBILI_MAG1 > 0 THEN
+						SET magazzino = 1;
+						SET cassetto = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, ID_MAG1_CLW, ID_MAG1_CCW);
+					ELSE
+						SET magazzino = 0;
+						SET cassetto = 0;
+					END IF;
 				ELSE
-					SET magazzino = 2;
-					SET cassetto = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, ID_MAG2_CLW, ID_MAG2_CCW);
+					IF CASS_DISPONIBILI_MAG2 > 0 THEN
+						SET magazzino = 2;
+						SET cassetto = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, ID_MAG2_CLW, ID_MAG2_CCW);
+					ELSE
+						SET magazzino = 0;
+						SET cassetto = 0;
+					END IF;
 				END IF;
 			ELSE 
-				SET DISTANZA_MAG1 = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, DISTANZA_MAG1_CLW, DISTANZA_MAG1_CCW);
-				SET ID_MAG1 = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, ID_MAG1_CLW, ID_MAG1_CCW);
+				-- caso in cui posso caricare in uno qualsiasi dei magazzini
+                
+                -- guardo se ho cassetti disponibili in tutti e due i casi
+                IF CASS_DISPONIBILI_MAG1 > 0 AND CASS_DISPONIBILI_MAG2 > 0 THEN
+					SET DISTANZA_MAG1 = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, DISTANZA_MAG1_CLW, DISTANZA_MAG1_CCW);
+					SET ID_MAG1 = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, ID_MAG1_CLW, ID_MAG1_CCW);
 				
-				SET DISTANZA_MAG2 = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, DISTANZA_MAG2_CLW, DISTANZA_MAG2_CCW);
-				SET ID_MAG2 = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, ID_MAG2_CLW, ID_MAG2_CCW);
-				
-				-- guardo se le distanze sono uguali
-				IF DISTANZA_MAG1 = DISTANZA_MAG2 THEN
-				-- in questo caso prendo dal magazzino più vuoto
-					SET magazzino = IF(CASS_DISPONIBILI_MAG1 <= CASS_DISPONIBILI_MAG2, 1, 2);
-					SET cassetto  = IF(CASS_DISPONIBILI_MAG1 <= CASS_DISPONIBILI_MAG2, ID_MAG1, ID_MAG2);
-				END IF;
-				-- altrimenti prenso dal magazzino con distanza minore
-				SET magazzino = IF(DISTANZA_MAG1 < DISTANZA_MAG2, 1, 2);
-				SET cassetto  = IF(DISTANZA_MAG1 < DISTANZA_MAG2, ID_MAG1, ID_MAG2);
+					SET DISTANZA_MAG2 = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, DISTANZA_MAG2_CLW, DISTANZA_MAG2_CCW);
+					SET ID_MAG2 = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, ID_MAG2_CLW, ID_MAG2_CCW);
+					
+					-- guardo se le distanze sono uguali
+					IF DISTANZA_MAG1 = DISTANZA_MAG2 THEN
+					-- in questo caso prendo dal magazzino più vuoto
+						SET magazzino = IF(CASS_DISPONIBILI_MAG1 <= CASS_DISPONIBILI_MAG2, 1, 2);
+						SET cassetto  = IF(CASS_DISPONIBILI_MAG1 <= CASS_DISPONIBILI_MAG2, ID_MAG1, ID_MAG2);
+					END IF;
+					-- altrimenti prendo dal magazzino con distanza minore
+					SET magazzino = IF(DISTANZA_MAG1 < DISTANZA_MAG2, 1, 2);
+					SET cassetto  = IF(DISTANZA_MAG1 < DISTANZA_MAG2, ID_MAG1, ID_MAG2);
+				else
+					-- inizializzo perchè potrebbero essere tutti e due pieni
+                    SET magazzino = 0;
+					SET cassetto  = 0;
+					-- se posso prendere solo da MAG1
+                    IF  CASS_DISPONIBILI_MAG1 > 0 AND CASS_DISPONIBILI_MAG2 = 0 THEN
+						SET magazzino = 1;
+						SET cassetto = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, ID_MAG1_CLW, ID_MAG1_CCW);
+                    END IF;
+                    -- se posso prendere solo da MAG2
+                    IF  CASS_DISPONIBILI_MAG1 = 0 AND CASS_DISPONIBILI_MAG2 = 0 THEN
+						SET magazzino = 2;
+						SET cassetto = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, ID_MAG2_CLW, ID_MAG2_CCW);
+                    END IF;
+                END IF;
 			END IF;
             
             -- se cassetto o magazzino sono NULL significa che magazzino pieno e non posso inserire allora forzo i valori a zero
@@ -226,32 +261,5 @@ BEGIN
 			SELECT `cassetto_magazzino_ID_MAGAZZINO` AS MAGAZZINO, `cassetto_ID_CASSETTO` AS CASSETTO, pID_QUARTINA AS ID_QUARTINA FROM `gualini`.`quartina`
 				WHERE `quartina`.`ID_QUARTINA` = pID_QUARTINA;
         END;
-    END IF;
-    
-
-
-    
-END$$ 
-
-   /* QUERY DI RIFERIMENTO
-    
-        SELECT 	*
-		, ID_CASSETTO - cass_riferimento as ID_VIRTUALE
-		, IF(ID_CASSETTO - cass_riferimento >= 0, ID_CASSETTO - cass_riferimento, MAX_CASS_MAG1 + (ID_CASSETTO - cass_riferimento)) AS DIST_CLW 
-		, IF(cass_riferimento - ID_CASSETTO >= 0, cass_riferimento - ID_CASSETTO, MAX_CASS_MAG1 + (cass_riferimento - ID_CASSETTO)) AS DIST_CCW
-		, ABS(ID_CASSETTO - cass_riferimento) as ABS_ID_VIRTUALE 
-	FROM gualini.cassetti_disponibili 
-	WHERE 
-		DISPONIBILE = 1 
-		AND ID_CASSETTO != cass_riferimento 
-		and ID_MAGAZZINO = 1
-		and POSIZIONE = 0    
-	order by 
-	DIST_CLW
-	LIMIT 1
-    INTO @idc, DISTANZA_MAG1_CLW
-	;
-    */
-
-DELIMITER ;
-
+    END IF;    
+END
