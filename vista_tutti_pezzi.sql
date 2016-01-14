@@ -4,7 +4,7 @@ CREATE
     DEFINER = `root`@`localhost` 
     SQL SECURITY DEFINER
 VIEW `tutti_pezzi` AS
-     SELECT 
+    SELECT 
         `tbcassetto`.`ID_CASSETTO` AS `ID_CASSETTO`,
         `tbcassetto`.`DISPONIBILE` AS `DISPONIBILE`,
         `tbcassetto`.`STATO` AS `STATO`,
@@ -49,18 +49,19 @@ VIEW `tutti_pezzi` AS
         `codprof`.`Colla` AS `Colla`,
         `codprof`.`Apertura` AS `Apertura`,
         `codprof`.`TIPO_PROFILO` AS `TIPO_PROFILO`,
-        `codprof`.`TELAIO` AS `TELAIO`
-        ,`banco1`.`ID_BANCO` AS `BANCO_SQ1`
-        ,`banco1`.`NumeroFila` AS `FILA_SQ1`
-        ,`banco2`.`ID_BANCO` AS `BANCO_SQ2`
-        ,`banco2`.`NumeroFila` AS `FILA_SQ2`
+        `codprof`.`TELAIO` AS `TELAIO`,
+        `banco1`.`ID_BANCO` AS `BANCO_SQ1`,
+        `banco1`.`NumeroFila` AS `FILA_SQ1`,
+        `banco2`.`ID_BANCO` AS `BANCO_SQ2`,
+        `banco2`.`NumeroFila` AS `FILA_SQ2`
     FROM
-        (((`cassetto` `tbcassetto`
+        (
+        ((((`cassetto` `tbcassetto`
         JOIN `quartina` `tbquartina` ON (((`tbcassetto`.`ID_CASSETTO` = `tbquartina`.`cassetto_ID_CASSETTO`)
             AND (`tbcassetto`.`magazzino_ID_MAGAZZINO` = `tbquartina`.`cassetto_magazzino_ID_MAGAZZINO`))))
-         
         JOIN `pezzo` `tbpezzo` ON ((`tbquartina`.`ID_QUARTINA` = `tbpezzo`.`quartina_ID_QUARTINA`)))
-        LEFT JOIN `r2_codiciprofili` `codprof` ON ((`tbpezzo`.`CODICE_PROFILO` = CONVERT( `codprof`.`CodiceProfilo` USING UTF8))))
-		LEFT JOIN `r2_banchi_squadrette` `banco1` ON ( `banco1`.`CodiceSquadretta`= `tbquartina`.`COD_SQUADRETTA1`)
-	 	LEFT JOIN `r2_banchi_squadrette` `banco2` ON ( `banco2`.`CodiceSquadretta` = `tbquartina`.`COD_SQUADRETTA2`)   
+        LEFT JOIN `r2_codiciprofili` `codprof` ON ((`tbpezzo`.`CODICE_PROFILO` = CONVERT( `codprof`.`CodiceProfilo` USING UTF8)) AND (`tbpezzo`.`SERIE_PROFILO` =  CONVERT( `codprof`.`SerieProfilo` USING UTF8))) 
+        )
+        LEFT JOIN `r2_banchi_squadrette` `banco1` ON ((CONVERT( `banco1`.`CodiceSquadretta` USING UTF8) = `tbquartina`.`COD_SQUADRETTA1`)))
+        LEFT JOIN `r2_banchi_squadrette` `banco2` ON ((CONVERT( `banco2`.`CodiceSquadretta` USING UTF8) = `tbquartina`.`COD_SQUADRETTA2`)))
     ORDER BY `tbquartina`.`cassetto_ID_CASSETTO` , `tbcassetto`.`magazzino_ID_MAGAZZINO` , `tbpezzo`.`ID_PEZZO`;
