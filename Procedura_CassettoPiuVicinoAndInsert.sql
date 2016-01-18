@@ -69,6 +69,7 @@ BEGIN
     SELECT count(*) FROM `gualini`.`quartina` WHERE `quartina`.`ID_QUARTINA` = pID_QUARTINA INTO esiste;
     
     IF esiste = 0 THEN
+    -- caso in cui la quartina non è presente nel magazzino
 		BEGIN
 			ricerca: REPEAT
 				-- inizializzo
@@ -190,7 +191,7 @@ BEGIN
 						SET cassetto = IF(DISTANZA_MAG1_CLW <= DISTANZA_MAG1_CCW, ID_MAG1_CLW, ID_MAG1_CCW);
                     END IF;
                     -- se posso prendere solo da MAG2
-                    IF  CASS_DISPONIBILI_MAG1 = 0 AND CASS_DISPONIBILI_MAG2 = 0 THEN
+                    IF  CASS_DISPONIBILI_MAG1 = 0 AND CASS_DISPONIBILI_MAG2 > 0 THEN
 						SET magazzino = 2;
 						SET cassetto = IF(DISTANZA_MAG2_CLW <= DISTANZA_MAG2_CCW, ID_MAG2_CLW, ID_MAG2_CCW);
                     END IF;
