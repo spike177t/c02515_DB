@@ -3,7 +3,7 @@ CREATE
      OR REPLACE ALGORITHM = UNDEFINED 
     DEFINER = `root`@`localhost` 
     SQL SECURITY DEFINER
-VIEW `gualini`.`tutti_pezzi_profili_banchisquadrette` AS
+VIEW `tutti_pezzi_profili_banchisquadrette` AS
     SELECT 
         `tutti`.`ID_CASSETTO` AS `ID_CASSETTO`,
         `tutti`.`DISPONIBILE` AS `DISPONIBILE`,
@@ -49,15 +49,39 @@ VIEW `gualini`.`tutti_pezzi_profili_banchisquadrette` AS
         `profili`.`Colla` AS `Colla`,
         `profili`.`Apertura` AS `Apertura`,
         `profili`.`TIPO_PROFILO` AS `TIPO_PROFILO`,
-        `profili`.`TELAIO` AS `TELAIO`,
-        COALESCE(`banco1`.`ID_BANCO`, 0) AS `BANCO_SQ1`,
-        COALESCE(`banco1`.`NumeroFila`, 0) AS `FILA_SQ1`,
-        COALESCE(`banco2`.`ID_BANCO`, 0) AS `BANCO_SQ2`,
-        COALESCE(`banco2`.`NumeroFila`, 0) AS `FILA_SQ2`
-        , (select count(*) from `tutti_pezzi` as self where `tutti`.quartina_ID_QUARTINA = self.quartina_ID_QUARTINA AND self.TIPO_PROFILO = "Z") as COUNT_Z
+        `profili`.`TELAIO` AS `TELAIO`
+ /*      , (SELECT 
+                `banco`.`ID_BANCO`
+            FROM
+                `r2_banchi_squadrette` `banco`
+            WHERE
+                (CONVERT( `banco`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA1`)) AS `BANCO_SQ1`,
+        (SELECT 
+                `banco`.`NumeroFila`
+            FROM
+                `r2_banchi_squadrette` `banco`
+            WHERE
+                (CONVERT( `banco`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA1`)) AS `FILA_SQ1`,
+        (SELECT 
+                `banco`.`ID_BANCO`
+            FROM
+                `r2_banchi_squadrette` `banco`
+            WHERE
+                (CONVERT( `banco`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA2`)) AS `BANCO_SQ2`,
+        (SELECT 
+                `banco`.`NumeroFila`
+            FROM
+                `r2_banchi_squadrette` `banco`
+            WHERE
+                (CONVERT( `banco`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA2`)) AS `FILA_SQ2`
+*/
+			, banco1.`ID_BANCO` as `BANCO_SQ1`
+			, banco1.`NumeroFila` as `FILA_SQ1`
+			, banco2.`ID_BANCO` as `BANCO_SQ2`
+			, banco2.`NumeroFila` as `FILA_SQ2`
     FROM
-        (((`gualini`.`tutti_pezzi` `tutti`
-        LEFT JOIN `gualini`.`r2_codiciprofili` `profili` ON (((`tutti`.`SERIE_PROFILO` = CONVERT( `profili`.`SerieProfilo` USING UTF8))
+        (`tutti_pezzi` `tutti`
+        LEFT JOIN `r2_codiciprofili` `profili` ON (((`tutti`.`SERIE_PROFILO` = CONVERT( `profili`.`SerieProfilo` USING UTF8))
             AND (`tutti`.`CODICE_PROFILO` = CONVERT( `profili`.`CodiceProfilo` USING UTF8)))))
-        LEFT JOIN `gualini`.`r2_banchi_squadrette` `banco1` ON ((CONVERT( `banco1`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA1`)))
-        LEFT JOIN `gualini`.`r2_banchi_squadrette` `banco2` ON ((CONVERT( `banco2`.`CodiceSquadretta` USING UTF8) = `tutti`.`COD_SQUADRETTA2`)));
+		LEFT JOIN `r2_banchi_squadrette` `banco1` ON ( `banco1`.`CodiceSquadretta` = `tutti`.`COD_SQUADRETTA1`)
+        LEFT JOIN `r2_banchi_squadrette` `banco2` ON ( `banco2`.`CodiceSquadretta` = `tutti`.`COD_SQUADRETTA2`);

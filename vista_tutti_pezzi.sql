@@ -3,7 +3,7 @@ CREATE
      OR REPLACE ALGORITHM = UNDEFINED 
     DEFINER = `root`@`localhost` 
     SQL SECURITY DEFINER
-VIEW `tutti_pezzi` AS
+VIEW `gualini`.`tutti_pezzi` AS
     SELECT 
         `tbcassetto`.`ID_CASSETTO` AS `ID_CASSETTO`,
         `tbcassetto`.`DISPONIBILE` AS `DISPONIBILE`,
@@ -50,18 +50,18 @@ VIEW `tutti_pezzi` AS
         `codprof`.`Apertura` AS `Apertura`,
         `codprof`.`TIPO_PROFILO` AS `TIPO_PROFILO`,
         `codprof`.`TELAIO` AS `TELAIO`,
-        `banco1`.`ID_BANCO` AS `BANCO_SQ1`,
-        `banco1`.`NumeroFila` AS `FILA_SQ1`,
-        `banco2`.`ID_BANCO` AS `BANCO_SQ2`,
-        `banco2`.`NumeroFila` AS `FILA_SQ2`
+        `codprof`.`R3_CodiceRobot` AS `R3_CodiceRobot`,
+		COALESCE(`banco1`.`ID_BANCO`, 0) AS `BANCO_SQ1`,
+        COALESCE(`banco1`.`NumeroFila`, 0) AS `FILA_SQ1`,
+        COALESCE(`banco2`.`ID_BANCO`, 0) AS `BANCO_SQ2`,
+        COALESCE(`banco2`.`NumeroFila`, 0) AS `FILA_SQ2`
     FROM
-        (
-        ((((`cassetto` `tbcassetto`
-        JOIN `quartina` `tbquartina` ON (((`tbcassetto`.`ID_CASSETTO` = `tbquartina`.`cassetto_ID_CASSETTO`)
+        (((((`gualini`.`cassetto` `tbcassetto`
+        JOIN `gualini`.`quartina` `tbquartina` ON (((`tbcassetto`.`ID_CASSETTO` = `tbquartina`.`cassetto_ID_CASSETTO`)
             AND (`tbcassetto`.`magazzino_ID_MAGAZZINO` = `tbquartina`.`cassetto_magazzino_ID_MAGAZZINO`))))
-        JOIN `pezzo` `tbpezzo` ON ((`tbquartina`.`ID_QUARTINA` = `tbpezzo`.`quartina_ID_QUARTINA`)))
-        LEFT JOIN `r2_codiciprofili` `codprof` ON ((`tbpezzo`.`CODICE_PROFILO` = CONVERT( `codprof`.`CodiceProfilo` USING UTF8)) AND (`tbpezzo`.`SERIE_PROFILO` =  CONVERT( `codprof`.`SerieProfilo` USING UTF8))) 
-        )
-        LEFT JOIN `r2_banchi_squadrette` `banco1` ON ((CONVERT( `banco1`.`CodiceSquadretta` USING UTF8) = `tbquartina`.`COD_SQUADRETTA1`)))
-        LEFT JOIN `r2_banchi_squadrette` `banco2` ON ((CONVERT( `banco2`.`CodiceSquadretta` USING UTF8) = `tbquartina`.`COD_SQUADRETTA2`)))
+        JOIN `gualini`.`pezzo` `tbpezzo` ON ((`tbquartina`.`ID_QUARTINA` = `tbpezzo`.`quartina_ID_QUARTINA`)))
+        LEFT JOIN `gualini`.`r2_codiciprofili` `codprof` ON (((`tbpezzo`.`CODICE_PROFILO` = CONVERT( `codprof`.`CodiceProfilo` USING UTF8))
+            AND (`tbpezzo`.`SERIE_PROFILO` = CONVERT( `codprof`.`SerieProfilo` USING UTF8)))))
+        LEFT JOIN `gualini`.`r2_banchi_squadrette` `banco1` ON ((CONVERT( `banco1`.`CodiceSquadretta` USING UTF8) = `tbquartina`.`COD_SQUADRETTA1`)))
+        LEFT JOIN `gualini`.`r2_banchi_squadrette` `banco2` ON ((CONVERT( `banco2`.`CodiceSquadretta` USING UTF8) = `tbquartina`.`COD_SQUADRETTA2`)))
     ORDER BY `tbquartina`.`cassetto_ID_CASSETTO` , `tbcassetto`.`magazzino_ID_MAGAZZINO` , `tbpezzo`.`ID_PEZZO`;
