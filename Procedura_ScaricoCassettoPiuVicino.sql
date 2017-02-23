@@ -3,8 +3,7 @@ DROP procedure IF EXISTS `ScaricoCassettoPiuVicino`;
 
 DELIMITER $$
 USE `gualini`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `ScaricoCassettoPiuVicino`
-		(
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ScaricoCassettoPiuVicino`(
 		pMAGAZZINO INT 
 		, pCOMMESSA_PREF VARCHAR(45)
 		, pCOMMESSA_ESCLUSIVA boolean
@@ -19,7 +18,7 @@ BEGIN
     
 	DECLARE CASS_RIF_MAG INT;
 
-	DECLARE MAX_CASS_MAG INT;
+	DECLARE TOT_CASSETTI_MAG INT;
     DECLARE CASS_PIENI_MAG INT;
 
 	DECLARE DISTANZA_CLW INT;
@@ -32,8 +31,8 @@ BEGIN
     DECLARE likeVal varchar(10);	-- il suo valore dipende dal fatto che la commessa sia esclusiva o meno
     DECLARE countCommessePref INT;
     
-    SELECT count(*) FROM cassetto 			WHERE magazzino_ID_MAGAZZINO 	= 1 INTO MAX_CASS_MAG;    
-    SELECT count(*) FROM cassetti_pieni 	WHERE ID_MAGAZZINO 				= 1 INTO CASS_PIENI_MAG;    
+    SELECT count(*) FROM cassetto 			WHERE magazzino_ID_MAGAZZINO 	= pMAGAZZINO INTO TOT_CASSETTI_MAG;    
+    SELECT count(*) FROM cassetti_pieni 	WHERE ID_MAGAZZINO 				= pMAGAZZINO INTO CASS_PIENI_MAG;    
 
     SET valMAGAZZINO = pMAGAZZINO;
     SET valPOSIZIONE = 0;
@@ -51,14 +50,23 @@ BEGIN
 
 		-- cerco il casetto che è nell'estrattore
 		SELECT ID_CASSETTO from gualini.cassetto WHERE POSIZIONE = cass_posizione AND magazzino_ID_MAGAZZINO = valMAGAZZINO into cass_riferimento;
-		-- se l'estrattore è vuoto come riferiemnto prendo l'ultimo cassetto non disponibile movimentato
+		-- se l'estrattore è vuoto come riferiemnto prendo l'ultimo cassetto dentro al mag (posizioen = 0) movimentato
 		IF (cass_riferimento IS NULL) THEN        
-			SELECT ID_CASSETTO from cassetti_pieni WHERE POSIZIONE = 0 AND magazzino_ID_MAGAZZINO = valMAGAZZINO Order By lastupdate_milli DESC LIMIT 1 into cass_riferimento;
-		END IF;     
-		-- se ancora NULL battezzo 1
-		IF (cass_riferimento IS NULL) THEN        
-			SET cass_riferimento = 1;
+			-- SELECT ID_CASSETTO from cassetti_pieni WHERE POSIZIONE = 0 AND magazzino_ID_MAGAZZINO = valMAGAZZINO Order By lastupdate_milli DESC LIMIT 1 into cass_riferimento;
+            SELECT ID_CASSETTO from gualini.cassetto WHERE POSIZIONE = 0 AND magazzino_ID_MAGAZZINO = valMAGAZZINO Order By lastupdate_milli DESC LIMIT 1 into cass_riferimento;
 		END IF; 
+        
+        -- se ho 1 solo cassetto pieno il casssetto di riferimento trovato al punto sopra
+        -- coincide con il cassetto pieno, quindi devo forzare a 0 il cassetto di riferimento
+        IF (CASS_PIENI_MAG = 1) THEN
+			SET cass_riferimento = 0;
+		END IF;
+		-- se ancora NULL battezzo 1 -> verificare con 0
+		IF (cass_riferimento IS NULL) THEN        
+			-- SET cass_riferimento = 1;
+            SET cass_riferimento = 0;
+		END IF; 
+
 
 		IF pCOMMESSA_ESCLUSIVA  THEN
 			SET likeVal = "";
@@ -71,11 +79,11 @@ BEGIN
 				SET likeVal = "%";  -- questo permette di selezionare qualsiasi commessa nelle query successive
             END IF;
 		END IF;
-        
+       
 		SELECT ID_CASSETTO
-			, IF(ID_CASSETTO - cass_riferimento >= 0, ID_CASSETTO - cass_riferimento, MAX_CASS_MAG + (ID_CASSETTO - cass_riferimento)) AS DIST_CLW 
-	-- 		, IF(cass_riferimento - ID_CASSETTO >= 0, cass_riferimento - ID_CASSETTO, MAX_CASS_MAG + (cass_riferimento - ID_CASSETTO)) AS DIST_CCW
-		FROM gualini.cassetti_pieni 
+			, IF(ID_CASSETTO - cass_riferimento >= 0, ID_CASSETTO - cass_riferimento, TOT_CASSETTI_MAG + (ID_CASSETTO - cass_riferimento)) AS DIST_CLW 
+	-- 		, IF(cass_riferimento - ID_CASSETTO >= 0, cass_riferimento - ID_CASSETTO, TOT_CASSETTI_MAG + (cass_riferimento - ID_CASSETTO)) AS DIST_CCW
+        FROM gualini.cassetti_pieni 
 		WHERE 
 			DISPONIBILE = 1 
 			AND ID_CASSETTO != cass_riferimento 
@@ -89,8 +97,8 @@ BEGIN
 		;
 		
 		SELECT ID_CASSETTO
--- 		, IF(ID_CASSETTO - cass_riferimento >= 0, ID_CASSETTO - cass_riferimento, MAX_CASS_MAG + (ID_CASSETTO - cass_riferimento)) AS DIST_CLW 
-		, IF(cass_riferimento - ID_CASSETTO >= 0, cass_riferimento - ID_CASSETTO, MAX_CASS_MAG + (cass_riferimento - ID_CASSETTO)) AS DIST_CCW
+-- 		, IF(ID_CASSETTO - cass_riferimento >= 0, ID_CASSETTO - cass_riferimento, TOT_CASSETTI_MAG + (ID_CASSETTO - cass_riferimento)) AS DIST_CLW 
+		, IF(cass_riferimento - ID_CASSETTO >= 0, cass_riferimento - ID_CASSETTO, TOT_CASSETTI_MAG + (cass_riferimento - ID_CASSETTO)) AS DIST_CCW
 		FROM gualini.cassetti_pieni 
 		WHERE 
 			DISPONIBILE = 1 
@@ -115,13 +123,11 @@ BEGIN
 			SET cassetto  = 0;
 		END IF;
 
-		
-	 --    SELECT magazzino AS MAGAZZINO, cassetto AS CASSETTO, pID_QUARTINA AS ID_QUARTINA;
 		SELECT magazzino AS MAGAZZINO, cassetto AS CASSETTO, DISTANZA_CLW, ID_CLW, DISTANZA_CCW, ID_CCW;
-		
+        
 	END;
     
-END$$ 
+END$$
 
 DELIMITER ;
 
